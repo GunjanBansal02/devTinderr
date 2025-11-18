@@ -1,0 +1,16 @@
+{
+  "name": "devtinderr",
+  "version": "1.0.0",
+  "description": "learning Project",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "author": "Gunjan Bansal",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "node": "^25.2.1"
+  }
+}
