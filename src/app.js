@@ -4,6 +4,7 @@ const connectDB = require('./config/database');
 const PORT = 3000;
 
 const User = require('./models/user');
+const { before } = require('node:test');
 
 // middleware to parse JSON request bodies to js objects
 app.use(express.json());
@@ -50,12 +51,26 @@ app.delete('/user', async (req, res) => {
     }
 }); 
 
-// update user by emailId - PATCH /user
-app.patch('/user', async (req, res) => {
-    const emailId = req.body.emailId;
+// update user by userId - PATCH /user
+app.patch('/user/:id', async (req, res) => {
+    const userId = req.params?.id;
     const updates = req.body;
+
     try {
-        const user = await User.findOneAndUpdate({emailId: emailId}, updates);
+        const allowedUpdates = ['userId', 'firstName', 'lastName', 'password', 'age', 'gender', 'photoUrl', 'bio', 'skills', 'city', 'state', 'country'];
+        const isValidUpdate = Object.keys(updates).every((k) => allowedUpdates.includes(k));
+
+        if (!isValidUpdate) {
+            res.status(400).send('Invalid updates!');
+        }
+        if (updates.skills.length > 10) {
+            return res.status(400).send('Cannot have more than 10 skills');
+        }
+
+        const user = await User.findByIdAndUpdate(userId, updates,
+            {returnDocument: "after", runValidators: true}
+        );
+        
         if (!user) {
             res.status(404).send('User not found');
         } else {
