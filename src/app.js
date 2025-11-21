@@ -4,7 +4,6 @@ const connectDB = require('./config/database');
 const PORT = 3000;
 
 const User = require('./models/user');
-const { before } = require('node:test');
 
 // middleware to parse JSON request bodies to js objects
 app.use(express.json());
