@@ -4,12 +4,24 @@ const connectDB = require('./config/database');
 const PORT = 3000;
 
 const User = require('./models/user');
+const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const { userAuth } = require('./middlewares/auth');
 
 // middleware to parse JSON request bodies to js objects
 app.use(express.json());
+app.use(cookieParser());
 
 // adding a new user - signup API - POST /signup
 app.post('/signup', async (req, res) => {
+    // validation of request body data 
+    // encryption of password
+    const { password } = req.body;
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    req.body.password = hashedPassword;
+
     // creating a new instance of user model
     const user = new User(req.body);
     try {
@@ -19,6 +31,54 @@ app.post('/signup', async (req, res) => {
         res.status(400).send('Error signing up user: ' + err.message);  
     }
 });
+
+app.post('/login', async (req, res) => {
+    try {
+        const { emailId, password } = req.body;
+
+        const user = await User.findOne({emailId});
+        if (!user) {
+            throw new Error('Invalid credentials');
+        }   
+        const hashedPassword = (await User.findOne({emailId})).password;
+        const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+        
+        if (isPasswordValid) {
+            // create a JWT token and send it to the user
+            const token = await jwt.sign({_id: user._id}, 'Dev@Tinder$790', {expiresIn: '1d'});
+
+            // add the token to cookies and send the response back to the user
+            res.cookie('token', token);
+
+            res.send('Login successful');
+        } else {
+            throw new Error('Invalid credentials');
+        }
+    } catch (err) {
+        res.status(500).send('Error logging in: ' + err.message);
+    }
+}); 
+
+app.get('/profile', userAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        res.send(user);
+
+    } catch (err) {
+        res.status(500).send('Error fetching profile: ' + err.message);
+    }
+    
+});
+
+app.post('sendConnectionRequest', userAuth, async (req, res) => {
+    comnstuser = req.user;
+    console.log('User sending connection request:', user);
+    res.send('Connection request sent successfully by' + user.firstName);       
+});
+
 
 // get user by emailId - GET /user
 app.get('/user', async (req, res) => {
